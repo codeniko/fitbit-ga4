@@ -8,7 +8,7 @@ const configure = options => {
         return
     }
 
-    const { measurementId, apiSecret, debug } = options
+    const { measurementId, apiSecret } = options
     if (!measurementId || !apiSecret) {
         console.log('GA4 configure: no measurement ID or API secret provided, no events will be sent.')
         return
@@ -16,9 +16,9 @@ const configure = options => {
 
     setMeasurementId(measurementId)
     setApiSecret(apiSecret)
-    if (typeof debug === 'boolean') {
-        setDebug(debug)
-    }
+
+    const debug = !!options.debug
+    setDebug(debug)
 
     init()
 }
