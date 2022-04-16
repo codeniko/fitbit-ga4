@@ -10,3 +10,4 @@ build
 /local-storage.js.map
 .DS_Store
 .idea
+package-lock.json
