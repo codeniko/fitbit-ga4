@@ -12,61 +12,61 @@ let apiSecret = null
 let debug = null
 
 export function getOrGenerateClientId() {
-  // check storage first
-  if (!clientId) {
-    clientId = localStorage.getItem(GA_CLIENT_ID_KEY)
-  }
+    // check storage first
+    if (!clientId) {
+        clientId = localStorage.getItem(GA_CLIENT_ID_KEY)
+    }
 
-  // generate it if not in storage
-  if (!clientId) {
-    clientId = `${Math.floor(Math.random() * 10000000000000000)}.${Date.now()}`
-    localStorage.setItem(GA_CLIENT_ID_KEY, clientId)
-  }
-  return clientId
+    // generate it if not in storage
+    if (!clientId) {
+        clientId = `${Math.floor(Math.random() * 10000000000000000)}.${Date.now()}`
+        localStorage.setItem(GA_CLIENT_ID_KEY, clientId)
+    }
+    return clientId
 }
 
 export function getMeasurementId() {
-  if (!measurementId) {
-    measurementId = localStorage.getItem(GA_MEASUREMENT_ID_KEY)
-  }
-  return measurementId
+    if (!measurementId) {
+        measurementId = localStorage.getItem(GA_MEASUREMENT_ID_KEY)
+    }
+    return measurementId
 }
 
 export function setMeasurementId(value) {
-  measurementId = value
-  localStorage.setItem(GA_MEASUREMENT_ID_KEY, value)
+    measurementId = value
+    localStorage.setItem(GA_MEASUREMENT_ID_KEY, value)
 }
 
 export function getApiSecret() {
-  if (!apiSecret) {
-    apiSecret = localStorage.getItem(GA_API_SECRET_KEY)
-  }
-  return apiSecret
+    if (!apiSecret) {
+        apiSecret = localStorage.getItem(GA_API_SECRET_KEY)
+    }
+    return apiSecret
 }
 
 export function setApiSecret(value) {
-  apiSecret = value
-  localStorage.setItem(GA_API_SECRET_KEY, value)
+    apiSecret = value
+    localStorage.setItem(GA_API_SECRET_KEY, value)
 }
 
 export function getDebug() {
-  if (debug === null) {
-    debug = localStorage.getItem(DEBUG_KEY) || false
-  }
-  return debug
+    if (debug === null) {
+        debug = localStorage.getItem(DEBUG_KEY) || false
+    }
+    return debug
 }
 
 export function setDebug(value) {
-  debug = value
-  localStorage.setItem(DEBUG_KEY, value)
+    debug = value
+    localStorage.setItem(DEBUG_KEY, value)
 }
 
 export default {
-  getOrGenerateClientId,
-  getMeasurementId,
-  setMeasurementId,
-  getApiSecret,
-  setApiSecret,
-  getDebug,
-  setDebug,
+    getOrGenerateClientId,
+    getMeasurementId,
+    setMeasurementId,
+    getApiSecret,
+    setApiSecret,
+    getDebug,
+    setDebug,
 }

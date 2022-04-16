@@ -1,14 +1,14 @@
 const transformData = event => {
-  const data = {
-    timestamp: Date.now(),
-    events: Array.isArray(event) ? event : [ event ],
-  }
+    const data = {
+        timestamp: Date.now(),
+        events: Array.isArray(event) ? event : [ event ],
+    }
 
-  return data
+    return data
 }
 
 const shared = {
-  transformData,
+    transformData,
 }
 
 export default shared
