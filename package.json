@@ -1,6 +1,6 @@
 {
   "name": "fitbit-ga4",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Google Analytics 4 (GA4) for Fitbit OS apps, clockfaces, and companions",
   "repository": {
     "type": "git",
