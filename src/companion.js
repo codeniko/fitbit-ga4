@@ -60,13 +60,7 @@ const sendToGA = (data) => {
     const body = {
         client_id: getOrGenerateClientId(),
         events: data.events,
-    }
-
-    // Prefer time of event when it was enqueued. Old UA noted that events older than 4 hours may not be processed so maintain that here until documented otherwise
-    // https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#qt
-    const queueTime = Date.now() - data.timestamp
-    if (queueTime < 14400000) {
-        body.timestamp_micros = data.timestamp * 1000000
+        timestamp_micros: data.timestamp * 1000000, // companion may not be connected by socket at the time of the event so always set it to that timestamp
     }
 
     const bodyString = JSON.stringify(body)

@@ -94,11 +94,3 @@ We provide a convenience function to send events for app loading, unloading, and
 * `load` is emitted each time the app is loaded.
 * `display_on` is emitted each time the device display turns on.
 * `unload` is emitted each time the app is unloaded.
-
-
-#### Note on event timestamps
-GA4 Measurement protocol is still in beta. It's worth noting that in the prior Universal Analytics version of the Google Analytics with hits, [hits fired with a timestamp older than 4 hours may not be processed once they reach GA servers](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#qt). Thus, always sending events with the event timestamp could have potentially lead to data loss in UA.
-It's unclear whether this behavior continues on in GA4. This is problematic for fitbit analytics since the Bluetooth connection between the device and the companion is not always active, event data may be sent long after the event actually took place. 
-To account for this possibility and the current undocumented behavior, events enqueued longer than 4 hours from the time they were sent to the time the companion wakes up will use the timestamp of when they are processed, not the actual event time.
-This is to be re-evaluated once GA4 Measurement protocol moves outside beta and better documented, or good outside information is discovered about this behavior.
-
