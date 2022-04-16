@@ -1,4 +1,7 @@
 # Fitbit Google Analytics 4 (GA4)
+[![NPM version](https://img.shields.io/npm/v/fitbit-ga4.svg)](https://npmjs.org/package/fitbit-ga4)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/codeniko/fitbit-ga4/blob/master/LICENSE)
+
 Google Analytics 4 (GA4) for Fitbit OS apps, clockfaces, and companions. This uses the new measurement protocol for GA4. Note that GA4 differs from the previous Universal Analytics as it's changed to be event based instead of sessions based.
 
 ## Installation
@@ -70,6 +73,14 @@ ga.send([
     },
 ])
 ```
+
+## Setting up GA4 on Google
+1) Create new GA4 property (no need to create the UA property alongside it).
+2) In Data Streams, choose the "Web" platform. Enter any URL and stream name. You can disable Enhanced measurements as those are tied to webpages and are irrelevant for fitbit apps.
+3) Copy the Measurement ID at the top right; it starts with `G-`
+4) On the same Data Stream page, scroll down and open `Measurement Protocol API secrets`. Create and copy the generated secret value.
+
+After you integrate fitbit-ga4 into your fitbit app, verify events were successfully sent from your app in the `Realtime Overview` page, under the `Event count by Event name` section.
 
 ## Debug logs
 You can enable debug logs in both the app and companion. Companion's `ga.configure` function allows for an optional `debug` field. Similarly, App exposes a `ga.setDebug(true)` function.
