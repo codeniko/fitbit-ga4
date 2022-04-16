@@ -1,0 +1,11 @@
+node_modules
+build
+/app.js
+/app.js.map
+/companion.js
+/companion.js.map
+/shared.js
+/shared.js.map
+/local-storage.js
+/local-storage.js.map
+.DS_Store

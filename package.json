@@ -1,0 +1,46 @@
+{
+  "name": "fitbit-ga4",
+  "version": "0.0.1",
+  "description": "Google Analytics 4 (GA4) for Fitbit OS apps, clockfaces, and companions",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codeniko/fitbit-ga4.git"
+  },
+  "keywords": [
+    "fitbitdev",
+    "fitbit",
+    "ga4",
+    "google analytics 4",
+    "google analytics",
+    "i13n",
+    "analytics",
+    "instrumentation",
+    "track",
+    "logging",
+    "tracking",
+    "tracker",
+    "versa3",
+    "sense",
+    "app",
+    "clock",
+    "clockface",
+    "watchface",
+    "watch"
+  ],
+  "author": "Nikolay Feldman",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/codeniko/fitbit-ga4/issues"
+  },
+  "homepage": "https://github.com/codeniko/fitbit-ga4",
+  "devDependencies": {
+    "@fitbit/sdk": "~6.1.0"
+  },
+  "scripts": {
+    "build": "tsc -project ./src/tsconfig.json --outDir ./",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@fitbit/sdk-cli": "^1.7.3"
+  }
+}
