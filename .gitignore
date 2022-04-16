@@ -9,3 +9,4 @@ build
 /local-storage.js
 /local-storage.js.map
 .DS_Store
+.idea
