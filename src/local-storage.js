@@ -1,4 +1,4 @@
-import { localStorage } from 'local-storage'
+const { localStorage } = require('local-storage')
 
 const GA_CLIENT_ID_KEY = 'ga4_client_id'
 const GA_MEASUREMENT_ID_KEY = 'ga4_measurement_id'
@@ -11,7 +11,7 @@ let measurementId = null
 let apiSecret = null
 let debug = null
 
-export function getOrGenerateClientId() {
+function getOrGenerateClientId() {
     // check storage first
     if (!clientId) {
         clientId = localStorage.getItem(GA_CLIENT_ID_KEY)
@@ -25,43 +25,43 @@ export function getOrGenerateClientId() {
     return clientId
 }
 
-export function getMeasurementId() {
+function getMeasurementId() {
     if (!measurementId) {
         measurementId = localStorage.getItem(GA_MEASUREMENT_ID_KEY)
     }
     return measurementId
 }
 
-export function setMeasurementId(value) {
+function setMeasurementId(value) {
     measurementId = value
     localStorage.setItem(GA_MEASUREMENT_ID_KEY, value)
 }
 
-export function getApiSecret() {
+function getApiSecret() {
     if (!apiSecret) {
         apiSecret = localStorage.getItem(GA_API_SECRET_KEY)
     }
     return apiSecret
 }
 
-export function setApiSecret(value) {
+function setApiSecret(value) {
     apiSecret = value
     localStorage.setItem(GA_API_SECRET_KEY, value)
 }
 
-export function getDebug() {
+function getDebug() {
     if (debug === null) {
         debug = localStorage.getItem(DEBUG_KEY) || false
     }
     return debug
 }
 
-export function setDebug(value) {
+function setDebug(value) {
     debug = value
     localStorage.setItem(DEBUG_KEY, value)
 }
 
-export default {
+const exportable = {
     getOrGenerateClientId,
     getMeasurementId,
     setMeasurementId,
@@ -69,4 +69,9 @@ export default {
     setApiSecret,
     getDebug,
     setDebug,
+}
+
+module.exports = {
+    ...exportable,
+    default: exportable,
 }

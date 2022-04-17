@@ -7,8 +7,11 @@ const transformData = event => {
     return data
 }
 
-const shared = {
+const exportable = {
     transformData,
 }
 
-export default shared
+module.exports = {
+    ...exportable,
+    default: exportable,
+}

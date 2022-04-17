@@ -1,6 +1,6 @@
-import { inbox } from 'file-transfer'
-import { getDebug, setDebug, getOrGenerateClientId, getMeasurementId, setMeasurementId, getApiSecret, setApiSecret } from './local-storage'
-import shared from './shared'
+const { inbox } = require('file-transfer')
+const { getDebug, setDebug, getOrGenerateClientId, getMeasurementId, setMeasurementId, getApiSecret, setApiSecret } = require('./local-storage')
+const shared = require('./shared')
 
 // Update global options
 const configure = options => {
@@ -91,9 +91,12 @@ const process_files = async () => {
     }
 }
 
-const analytics = {
+const exportable = {
     configure,
     send,
 }
 
-export default analytics
+module.exports = {
+    ...exportable,
+    default: exportable,
+}

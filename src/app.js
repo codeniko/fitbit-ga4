@@ -1,8 +1,8 @@
-import { me as appbit } from 'appbit'
-import { display } from 'display'
-import { encode } from 'cbor'
-import { outbox } from 'file-transfer'
-import shared from './shared'
+const appbit = require('appbit').me
+const { display } = require('display')
+const { encode } = require('cbor')
+const { outbox } = require('file-transfer')
+const shared = require('./shared')
 
 let debug = false
 
@@ -55,10 +55,13 @@ const sendLoadAndDisplayOnEvents = value => {
     })
 }
 
-const analytics = {
+const exportable = {
     sendLoadAndDisplayOnEvents,
     send,
     setDebug,
 }
 
-export default analytics
+module.exports = {
+    ...exportable,
+    default: exportable,
+}
