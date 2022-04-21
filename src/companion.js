@@ -16,14 +16,14 @@ import fetchWrapper from './fetch-wrapper'
 
 //====================================================================================================
 // Configure options for Google analytics 4
-// Options include: measurementId, apiSecret, debug
+// Options include: measurementId, apiSecret, autoFileTransferProcessing, debug
 //====================================================================================================
 export const configure = options => {
     if (!options) {
         return
     }
 
-    const { measurementId, apiSecret } = options
+    const { measurementId, apiSecret, autoFileTransferProcessing } = options
     if (!measurementId || !apiSecret) {
         console.log('GA4: no measurement ID or API secret provided in configure, no events will be sent.')
         return
@@ -35,17 +35,22 @@ export const configure = options => {
     const debug = !!options.debug
     setDebug(debug)
 
-    init()
+    const shouldProcessAllFileTransfers = autoFileTransferProcessing !== undefined ? autoFileTransferProcessing : true // process all by default
+    if (shouldProcessAllFileTransfers) {
+        init()
+    } else {
+        console.warn('GA4: Disabled auto file transfer processing. Main companion must allow GA4 to process files by calling ga.processFileTransfer(file)')
+    }
 }
 
 const isConfigured = () => getMeasurementId() && getApiSecret()
 
 const init = () => {
     // Process new files as they arrive
-    inbox.addEventListener('newfile', process_files)
+    inbox.addEventListener('newfile', processAllFiles)
 
     // Process files on startup
-    process_files()
+    processAllFiles()
 }
 
 //====================================================================================================
@@ -124,24 +129,45 @@ const sendToGA = (data) => {
     })
 }
 
-const process_files = async () => {
+//====================================================================================================
+// Process file transfer. Required if configured to disable autoFileTransferProcessing because main project also
+// utilizes file transfers.
+// Returns true if it's a GA4 file and is processed, false otherwise
+//====================================================================================================
+export const processFileTransfer = async file => {
+    let processed = false
+    if (!isConfigured()) {
+        console.warn('GA4: processFileTransfer invoked but GA4 is not configured')
+        return processed
+    }
+
+    if (file.name.startsWith(FILE_EVENT)) {
+        const payload = await file.cbor()
+        getDebug() && console.log(`GA4: File ${file.name} is being processed.`)
+        processed = true
+        sendToGA(payload)
+    } else if (file.name.startsWith(FILE_USER_PROPERTIES)) {
+        const payload = await file.cbor()
+        getDebug() && console.log(`GA4: File ${file.name} is being processed.`)
+        processed = true
+        setUserProperties(payload)
+    } else if (file.name.startsWith(FILE_CLEAR_USER_PROPERTIES)) {
+        await file.cbor() // expecting no data, consuming so it leaves inbox
+        getDebug() && console.log(`GA4: File ${file.name} is being processed.`)
+        processed = true
+        clearUserProperties()
+    }
+    return processed
+}
+
+const processAllFiles = async () => {
     if (!isConfigured()) {
         return
     }
 
     let file
     while ((file = await inbox.pop())) {
-        const payload = await file.cbor()
-        if (file.name.startsWith(FILE_EVENT)) {
-            getDebug() && console.log(`GA4: File ${file.name} is being processed.`)
-            sendToGA(payload)
-        } else if (file.name.startsWith(FILE_USER_PROPERTIES)) {
-            getDebug() && console.log(`GA4: File ${file.name} is being processed.`)
-            setUserProperties(payload)
-        } else if (file.name.startsWith(FILE_CLEAR_USER_PROPERTIES)) {
-            getDebug() && console.log(`GA4: File ${file.name} is being processed.`)
-            clearUserProperties()
-        }
+       processFileTransfer(file)
     }
 }
 
@@ -156,6 +182,7 @@ const transformUserProperties = userProperties => {
 
 const exportable = {
     configure,
+    processFileTransfer,
     send,
     setUserProperties,
     clearUserProperties,

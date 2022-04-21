@@ -87,22 +87,44 @@ ga.setUserProperties({
 // Clear persisted user properties
 ga.clearUserProperties()
 
-// View persisted user properties, NOTE only available on companion!
+// View persisted user properties, NOTE only available in companion!
 ga.getUserProperties()
 ```
 
-## Setting up GA4 on Google
-1) Create new GA4 property (no need to create the UA property alongside it).
-2) In Data Streams, choose the "Web" platform. Enter any URL and stream name. You can disable Enhanced measurements as those are tied to webpages and are irrelevant for fitbit apps.
-3) Copy the Measurement ID at the top right; it starts with `G-`
-4) On the same Data Stream page, scroll down and open `Measurement Protocol API secrets`. Create and copy the generated secret value.
-
 After you integrate fitbit-ga4 into your fitbit app, verify events were successfully sent from your app in the `Realtime Overview` page, under the `Event count by Event name` section.
 
-## Debug logs
-You can enable debug logs in both the app and companion. Companion's `ga.configure` function allows for an optional `debug` field. Similarly, App exposes a `ga.setDebug(true)` function.
-
 ## Other notes
+### Read if you use `file-transfer` in your fitbit project
+Fitbit-ga4's companion uses `file-transfer` internally. By default, fitbit-ga4 is configured to auto process all file transfers.
+This can conflict with your companion's file transfer processing. Fitbit SDK does a poor job here and doesn't allow modules to handle their own queues.
+Regardless which of our companions processes first, the other will not receive its expected files.
+In order to not interfere with each other's processing, you can disable fitbit-ga4's auto handling and forward unknown files to us to process manually instead.
+Note: identify a file is yours based off the filename first before consuming it with `arrayBuffer()`, `cbor{}`, `json()`, or `text()`.
+If you invoke one of those functions, fitbit-ga4 wont be able to consume that file's content after you.
+
+#### Example companion disabling auto file transfer processing
+```javascript
+import { inbox } from 'file-transfer'
+import ga from 'fitbit-ga4/companion'
+
+ga.configure({
+    // ... other options
+    autoFileTransferProcessing: false
+})
+
+async function processAllFiles() {
+    let file
+    while ((file = await inbox.pop())) {
+        if (file.name.startsWith('MY_FILE')) {
+            // your processing logic
+        } else {
+            // unknown file, proxy to fitbit-ga4 for processing
+            ga.processFileTransfer(file)
+        }
+    }
+}
+```
+
 #### Client ID
 Upon installation, a persistent client ID is created to anonymously identify the device. This is required by the Measurement Protocol API.
 
@@ -111,3 +133,12 @@ We provide a convenience function to send events for app loading, unloading, and
 * `load` is emitted each time the app is loaded.
 * `display_on` is emitted each time the device display turns on.
 * `unload` is emitted each time the app is unloaded.
+
+## Setting up GA4 on Google
+1) Create new GA4 property (no need to create the UA property alongside it).
+2) In Data Streams, choose the "Web" platform. Enter any URL and stream name. You can disable Enhanced measurements as those are tied to webpages and are irrelevant for fitbit apps.
+3) Copy the Measurement ID at the top right; it starts with `G-`
+4) On the same Data Stream page, scroll down and open `Measurement Protocol API secrets`. Create and copy the generated secret value.
+
+## Debug logs
+You can enable debug logs in both the app and companion. Companion's `ga.configure` function allows for an optional `debug` field. Similarly, App exposes a `ga.setDebug(true)` function.

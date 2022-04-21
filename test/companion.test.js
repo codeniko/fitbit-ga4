@@ -153,12 +153,6 @@ describe('Companion', () => {
             const addEventListenerSpy = sinon.spy()
 
             const module = loadWithInjectedDependencies({
-                'file-transfer': {
-                    inbox: {
-                        pop: () => Promise.resolve(null),
-                        addEventListener: addEventListenerSpy
-                    }
-                },
                 './local-storage': storageStubs,
             })
 
@@ -166,18 +160,20 @@ describe('Companion', () => {
                 measurementId: 'testmid',
                 apiSecret: 'testsecret',
                 debug: true,
+                autoFileTransferProcessing: false,
             })
 
             assert.equal(storageStubs.setMeasurementId.args[0][0], 'testmid')
             assert.equal(storageStubs.setApiSecret.args[0][0], 'testsecret')
             assert.equal(storageStubs.setDebug.args[0][0], true)
-            assert.equal(addEventListenerSpy.args[0][0], 'newfile')
+            assert.isFalse(addEventListenerSpy.calledOnce)
         })
 
-        it('should process and send GA data from app after configure', async () => {
+        it('should process and send GA data from app after configure if auto processing file transfers', async () => {
             getClock().restore()
             const fetchSpy = sinon.spy()
             const inboxPopStub = sinon.stub()
+            const addEventListenerSpy = sinon.spy()
             inboxPopStub.onCall(0).returns(Promise.resolve({
                 cbor: () => Promise.resolve({
                     timestamp: 123456,
@@ -192,7 +188,7 @@ describe('Companion', () => {
                 'file-transfer': {
                     inbox: {
                         pop: inboxPopStub,
-                        addEventListener: sinon.spy()
+                        addEventListener: addEventListenerSpy,
                     }
                 },
             })
@@ -208,6 +204,8 @@ describe('Companion', () => {
                 method: 'POST',
                 body: '{"client_id":"cid","events":[{"name":"eventname123456"}],"timestamp_micros":123456000}'
             })
+            assert.isTrue(addEventListenerSpy.calledOnce)
+            assert.equal(addEventListenerSpy.args[0][0], 'newfile')
 
             useFakeClock()
         })
@@ -261,28 +259,16 @@ describe('Companion', () => {
             useFakeClock()
         })
 
-        it('should clear user properties from file send by app after configure', async () => {
+        it('should not consume files transferred from app that did not originate from us', async () => {
             getClock().restore()
 
+            const cborSpy = sinon.spy()
             const inboxPopStub = sinon.stub()
             inboxPopStub.onCall(0).returns(Promise.resolve({
-                cbor: () => Promise.resolve(''),
-                name: '_ga4_clearuserprops_123',
+                cbor: cborSpy,
+                name: 'some_unknown_file',
             }))
             inboxPopStub.onCall(1).returns(Promise.resolve(null))
-
-            const storageStubs = {
-                getOrGenerateClientId: sinon.stub().returns('cid'),
-                getMeasurementId: sinon.stub().returns('mid'),
-                setMeasurementId: sinon.spy(),
-                getApiSecret: sinon.stub().returns('secret'),
-                setApiSecret: sinon.spy(),
-                getUserProperties: () => ({}),
-                setUserProperties: sinon.spy(),
-                clearUserProperties: sinon.spy(),
-                getDebug: sinon.stub().returns(false),
-                setDebug: sinon.spy(),
-            }
 
             const module = loadWithInjectedDependencies({
                 'file-transfer': {
@@ -291,7 +277,6 @@ describe('Companion', () => {
                         addEventListener: sinon.spy()
                     }
                 },
-                './local-storage': storageStubs
             })
 
             module.configure({
@@ -300,63 +285,45 @@ describe('Companion', () => {
             })
             await sleep(10) // there is an async buried internally which we can't await from the tests
 
-            assert.isTrue(storageStubs.clearUserProperties.calledOnce)
+            assert.isFalse(cborSpy.called)
+
             useFakeClock()
         })
 
-        it('should set and append user properties from file send by app after configure', async () => {
+        it('should not set file transfer listener or process all files if configured to disable autoFileTransferProcessing', async () => {
             getClock().restore()
 
+            const cborSpy = sinon.spy()
             const inboxPopStub = sinon.stub()
+            const eventListenerSpy = sinon.spy()
             inboxPopStub.onCall(0).returns(Promise.resolve({
-                cbor: () => Promise.resolve({
-                    userProps1: 123,
-                    userProps2: 'test',
-                }),
-                name: '_ga4_userprops_123',
+                cbor: cborSpy,
+                name: '_google_analytics4_1234',
             }))
             inboxPopStub.onCall(1).returns(Promise.resolve(null))
-
-            const storageStubs = {
-                getOrGenerateClientId: sinon.stub().returns('cid'),
-                getMeasurementId: sinon.stub().returns('mid'),
-                setMeasurementId: sinon.spy(),
-                getApiSecret: sinon.stub().returns('secret'),
-                setApiSecret: sinon.spy(),
-                getUserProperties: () => ({ existingProp: 'existingvalue' }),
-                setUserProperties: sinon.spy(),
-                clearUserProperties: sinon.spy(),
-                getDebug: sinon.stub().returns(false),
-                setDebug: sinon.spy(),
-            }
 
             const module = loadWithInjectedDependencies({
                 'file-transfer': {
                     inbox: {
                         pop: inboxPopStub,
-                        addEventListener: sinon.spy()
+                        addEventListener: eventListenerSpy
                     }
                 },
-                './local-storage': storageStubs
             })
 
             module.configure({
                 measurementId: 'mid',
                 apiSecret: 'secret',
+                autoFileTransferProcessing: false,
             })
             await sleep(10) // there is an async buried internally which we can't await from the tests
 
-            assert.isFalse(storageStubs.clearUserProperties.calledOnce)
-            assert.isTrue(storageStubs.setUserProperties.calledOnce)
-            assert.deepEqual(storageStubs.setUserProperties.args[0][0], {
-                existingProp: 'existingvalue', // existing user props need to remain
-                userProps1: '123', // normalized to string
-                userProps2: 'test',
-            })
+            assert.isFalse(inboxPopStub.called)
+            assert.isFalse(eventListenerSpy.called)
+            assert.isFalse(cborSpy.called)
+
             useFakeClock()
         })
-
-
     })
 
     describe('user properties', () => {
@@ -415,6 +382,106 @@ describe('Companion', () => {
             assert.deepEqual(result, {
                 existing: 'value',
             })
+        })
+    })
+
+    describe('processFileTransfer', () => {
+
+        it('should not process a file thats not one of ours', async () => {
+            const cborSpy = sinon.spy()
+            const module = loadWithInjectedDependencies({})
+
+            const result = await module.processFileTransfer({
+                cbor: cborSpy,
+                name: 'unknown_file_name',
+            })
+
+            assert.isFalse(cborSpy.called)
+            assert.isFalse(result)
+        })
+
+        it('should process and send GA4 event data from file transfer', async () => {
+            const fetchSpy = sinon.spy()
+            const module = loadWithInjectedDependencies({
+                './fetch-wrapper': { default: fetchSpy },
+            })
+
+            const result = await module.processFileTransfer({
+                cbor: () => Promise.resolve({
+                    timestamp: 123456,
+                    events: [{ name: 'eventname123456'}]
+                }),
+                name: '_google_analytics4_123456',
+            })
+
+            assert(fetchSpy.args[0][0] === `https://www.google-analytics.com/mp/collect?measurement_id=mid&api_secret=secret`)
+            assert.deepEqual(fetchSpy.args[0][1], {
+                method: 'POST',
+                body: '{"client_id":"cid","events":[{"name":"eventname123456"}],"timestamp_micros":123456000}'
+            })
+            assert.isTrue(result)
+        })
+
+        it('should clear user properties from file', async () => {
+            const storageStubs = {
+                getOrGenerateClientId: sinon.stub().returns('cid'),
+                getMeasurementId: sinon.stub().returns('mid'),
+                setMeasurementId: sinon.spy(),
+                getApiSecret: sinon.stub().returns('secret'),
+                setApiSecret: sinon.spy(),
+                getUserProperties: () => ({}),
+                setUserProperties: sinon.spy(),
+                clearUserProperties: sinon.spy(),
+                getDebug: sinon.stub().returns(false),
+                setDebug: sinon.spy(),
+            }
+
+            const module = loadWithInjectedDependencies({
+                './local-storage': storageStubs
+            })
+
+            const result = await module.processFileTransfer({
+                cbor: () => Promise.resolve(''),
+                name: '_ga4_clearuserprops_123',
+            })
+
+            assert.isTrue(result)
+            assert.isTrue(storageStubs.clearUserProperties.calledOnce)
+        })
+
+        it('should set and append user properties from file', async () => {
+            const storageStubs = {
+                getOrGenerateClientId: sinon.stub().returns('cid'),
+                getMeasurementId: sinon.stub().returns('mid'),
+                setMeasurementId: sinon.spy(),
+                getApiSecret: sinon.stub().returns('secret'),
+                setApiSecret: sinon.spy(),
+                getUserProperties: () => ({ existingProp: 'existingvalue' }),
+                setUserProperties: sinon.spy(),
+                clearUserProperties: sinon.spy(),
+                getDebug: sinon.stub().returns(false),
+                setDebug: sinon.spy(),
+            }
+
+            const module = loadWithInjectedDependencies({
+                './local-storage': storageStubs
+            })
+            const result = await module.processFileTransfer({
+                cbor: () => Promise.resolve({
+                    userProps1: 123,
+                    userProps2: 'test',
+                }),
+                name: '_ga4_userprops_123',
+            })
+
+            assert.isFalse(storageStubs.clearUserProperties.called)
+            assert.isTrue(storageStubs.setUserProperties.calledOnce)
+            assert.deepEqual(storageStubs.setUserProperties.args[0][0], {
+                existingProp: 'existingvalue', // existing user props need to remain
+                userProps1: '123', // normalized to string
+                userProps2: 'test',
+            })
+            assert.isTrue(result)
         })
     })
 })

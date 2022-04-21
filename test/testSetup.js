@@ -13,6 +13,7 @@ useFakeClock()
 
 
 // console.log = () => {}
+console.warn = () => {}
 
 module.exports = {
     timestamp,
