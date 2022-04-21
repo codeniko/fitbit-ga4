@@ -2,17 +2,29 @@ name: CI
 on: push
 jobs:
   test:
+    name: Run tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v2
         with:
-          node-version: '16'
+          node-version: 'lts/*'
       - run: npm ci
       - run: npm run build:commonjs
       - run: npm test
-      - run: npm run prepare
+
+  release:
+    name: Publish release
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 'lts/*'
+      - run: npm ci
       - name: Release
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
