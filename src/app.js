@@ -6,7 +6,7 @@ import shared from './shared'
 
 let debug = false
 
-const setDebug = value => {
+export const setDebug = value => {
     debug = !!value
 }
 
@@ -14,7 +14,7 @@ const setDebug = value => {
 // Send
 // Can be a single event object, or array of events
 //====================================================================================================
-const send = event => {
+export const send = event => {
     const data = shared.transformData(event)
 
     // Generate a unique filename
@@ -28,7 +28,7 @@ const send = event => {
 }
 
 // If invoking, ensure you're invoking at the top of your 'app' right after importing the module.
-const sendLoadAndDisplayOnEvents = value => {
+export const sendLoadAndDisplayOnEvents = value => {
     if (!!value === false) {
         return
     }

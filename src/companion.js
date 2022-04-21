@@ -3,7 +3,7 @@ import { getDebug, setDebug, getOrGenerateClientId, getMeasurementId, setMeasure
 import shared from './shared'
 
 // Update global options
-const configure = options => {
+export const configure = options => {
     if (!options) {
         return
     }
@@ -37,7 +37,7 @@ const init = () => {
 // Send
 // Can be a single event object, or array of events
 //====================================================================================================
-const send = event => {
+export const send = event => {
     const data = shared.transformData(event)
 
     // drop even if not configured. Configure should be the first function invoked for companion, before any send.
@@ -49,7 +49,7 @@ const send = event => {
 }
 
 const sendToGA = (data) => {
-    if (!data) {
+    if (!data || !data.timestamp || !data.events) {
         return
     }
     if (!getMeasurementId() || !getApiSecret()) {
