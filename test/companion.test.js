@@ -16,6 +16,9 @@ describe('Companion', () => {
             setMeasurementId: () => {},
             getApiSecret: () => 'secret',
             setApiSecret: () => {},
+            getUserProperties: () => ({}),
+            setUserProperties: () => {},
+            clearUserProperties: () => {},
             getDebug: () => false,
             setDebug: () => {},
         },
@@ -107,6 +110,27 @@ describe('Companion', () => {
             })
         })
 
+        it('should include user properties if set in storage', async () => {
+            const fetchSpy = sinon.spy()
+            const storageStubs = {
+                getOrGenerateClientId: () => 'cid',
+                getMeasurementId: () => 'mid',
+                getApiSecret: () => 'secret',
+                getUserProperties: sinon.stub().returns({ existing1: 'value1', existing2: true }),
+                getDebug: () => false,
+            }
+            const module = loadWithInjectedDependencies({
+                './fetch-wrapper': { default: fetchSpy },
+                './local-storage': storageStubs,
+            })
+            module.send({ name: 'eventname' })
+            assert.isTrue(storageStubs.getUserProperties.called)
+            assert(fetchSpy.args[0][0] === `https://www.google-analytics.com/mp/collect?measurement_id=mid&api_secret=secret`)
+            assert.deepEqual(fetchSpy.args[0][1], {
+                method: 'POST',
+                body: '{"client_id":"cid","events":[{"name":"eventname"}],"timestamp_micros":1650223688019000,"user_properties":{"existing1":{"value":"value1"},"existing2":{"value":true}}}'
+            })
+        })
     })
 
     describe('configure', () => {
@@ -120,6 +144,9 @@ describe('Companion', () => {
                 setMeasurementId: sinon.spy(),
                 getApiSecret: sinon.stub().returns('secret'),
                 setApiSecret: sinon.spy(),
+                getUserProperties: () => ({}),
+                setUserProperties: () => {},
+                clearUserProperties: () => {},
                 getDebug: sinon.stub().returns(false),
                 setDebug: sinon.spy(),
             }
@@ -174,7 +201,7 @@ describe('Companion', () => {
                 measurementId: 'mid',
                 apiSecret: 'secret',
             })
-            await sleep(30) // there is an async buried internally which we can't await from the tests
+            await sleep(10) // there is an async buried internally which we can't await from the tests
 
             assert(fetchSpy.args[0][0] === `https://www.google-analytics.com/mp/collect?measurement_id=mid&api_secret=secret`)
             assert.deepEqual(fetchSpy.args[0][1], {
@@ -219,7 +246,7 @@ describe('Companion', () => {
                 measurementId: 'mid',
                 apiSecret: 'secret',
             })
-            await sleep(30) // there is an async buried internally which we can't await from the tests
+            await sleep(10) // there is an async buried internally which we can't await from the tests
 
             assert(fetchSpy.args[0][0] === `https://www.google-analytics.com/mp/collect?measurement_id=mid&api_secret=secret`)
             assert.deepEqual(fetchSpy.args[0][1], {
@@ -232,6 +259,162 @@ describe('Companion', () => {
             })
 
             useFakeClock()
+        })
+
+        it('should clear user properties from file send by app after configure', async () => {
+            getClock().restore()
+
+            const inboxPopStub = sinon.stub()
+            inboxPopStub.onCall(0).returns(Promise.resolve({
+                cbor: () => Promise.resolve(''),
+                name: '_ga4_clearuserprops_123',
+            }))
+            inboxPopStub.onCall(1).returns(Promise.resolve(null))
+
+            const storageStubs = {
+                getOrGenerateClientId: sinon.stub().returns('cid'),
+                getMeasurementId: sinon.stub().returns('mid'),
+                setMeasurementId: sinon.spy(),
+                getApiSecret: sinon.stub().returns('secret'),
+                setApiSecret: sinon.spy(),
+                getUserProperties: () => ({}),
+                setUserProperties: sinon.spy(),
+                clearUserProperties: sinon.spy(),
+                getDebug: sinon.stub().returns(false),
+                setDebug: sinon.spy(),
+            }
+
+            const module = loadWithInjectedDependencies({
+                'file-transfer': {
+                    inbox: {
+                        pop: inboxPopStub,
+                        addEventListener: sinon.spy()
+                    }
+                },
+                './local-storage': storageStubs
+            })
+
+            module.configure({
+                measurementId: 'mid',
+                apiSecret: 'secret',
+            })
+            await sleep(10) // there is an async buried internally which we can't await from the tests
+
+            assert.isTrue(storageStubs.clearUserProperties.calledOnce)
+            useFakeClock()
+        })
+
+        it('should set and append user properties from file send by app after configure', async () => {
+            getClock().restore()
+
+            const inboxPopStub = sinon.stub()
+            inboxPopStub.onCall(0).returns(Promise.resolve({
+                cbor: () => Promise.resolve({
+                    userProps1: 123,
+                    userProps2: 'test',
+                }),
+                name: '_ga4_userprops_123',
+            }))
+            inboxPopStub.onCall(1).returns(Promise.resolve(null))
+
+            const storageStubs = {
+                getOrGenerateClientId: sinon.stub().returns('cid'),
+                getMeasurementId: sinon.stub().returns('mid'),
+                setMeasurementId: sinon.spy(),
+                getApiSecret: sinon.stub().returns('secret'),
+                setApiSecret: sinon.spy(),
+                getUserProperties: () => ({ existingProp: 'existingvalue' }),
+                setUserProperties: sinon.spy(),
+                clearUserProperties: sinon.spy(),
+                getDebug: sinon.stub().returns(false),
+                setDebug: sinon.spy(),
+            }
+
+            const module = loadWithInjectedDependencies({
+                'file-transfer': {
+                    inbox: {
+                        pop: inboxPopStub,
+                        addEventListener: sinon.spy()
+                    }
+                },
+                './local-storage': storageStubs
+            })
+
+            module.configure({
+                measurementId: 'mid',
+                apiSecret: 'secret',
+            })
+            await sleep(10) // there is an async buried internally which we can't await from the tests
+
+            assert.isFalse(storageStubs.clearUserProperties.calledOnce)
+            assert.isTrue(storageStubs.setUserProperties.calledOnce)
+            assert.deepEqual(storageStubs.setUserProperties.args[0][0], {
+                existingProp: 'existingvalue', // existing user props need to remain
+                userProps1: '123', // normalized to string
+                userProps2: 'test',
+            })
+            useFakeClock()
+        })
+
+
+    })
+
+    describe('user properties', () => {
+        it('should be able to clear user properties from storage', async () => {
+            const storageStubs = {
+                clearUserProperties: sinon.spy(),
+            }
+
+            const module = loadWithInjectedDependencies({
+                './local-storage': storageStubs
+            })
+
+            module.clearUserProperties()
+
+            assert.isTrue(storageStubs.clearUserProperties.calledOnce)
+        })
+
+        it('should be able to set and appending to existing user properties', async () => {
+            const storageStubs = {
+                getUserProperties: sinon.stub().returns({ existing: 'value' }),
+                setUserProperties: sinon.spy(),
+                getDebug: sinon.stub().returns(false),
+            }
+
+            const module = loadWithInjectedDependencies({
+                './local-storage': storageStubs
+            })
+
+            module.setUserProperties({
+                newProp1: 123,
+                newProp2: 'value1234',
+            })
+
+            assert.isTrue(storageStubs.getUserProperties.calledOnce) // should retrieve existing user props
+            assert.isTrue(storageStubs.setUserProperties.calledOnce)
+            assert.deepEqual(storageStubs.setUserProperties.args[0][0], {
+                existing: 'value',
+                newProp1: '123',
+                newProp2: 'value1234',
+            })
+        })
+
+        it('should retrieve existing user properties from storage', async () => {
+            const storageStubs = {
+                getUserProperties: sinon.stub().returns({ existing: 'value' }),
+                getDebug: sinon.stub().returns(false),
+            }
+
+            const module = loadWithInjectedDependencies({
+                './local-storage': storageStubs
+            })
+
+            const result = module.getUserProperties()
+
+            assert.isTrue(storageStubs.getUserProperties.calledOnce) // should retrieve existing user props
+            assert.deepEqual(result, {
+                existing: 'value',
+            })
         })
     })
 })

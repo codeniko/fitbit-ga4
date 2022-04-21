@@ -3,13 +3,15 @@ import { localStorage } from 'local-storage'
 const GA_CLIENT_ID_KEY = 'ga4_client_id'
 const GA_MEASUREMENT_ID_KEY = 'ga4_measurement_id'
 const GA_API_SECRET_KEY = 'ga4_api_secret'
-const DEBUG_KEY = 'debug_key'
+const DEBUG_KEY = 'ga4_debug_key'
+const USER_PROPERTIES_KEY = 'ga4_user_properties'
 
 // cache in memory so we dont keep fetching from storage
 let clientId = null
 let measurementId = null
 let apiSecret = null
 let debug = null
+let userProperties = null
 
 export function getOrGenerateClientId() {
     // check storage first
@@ -49,6 +51,23 @@ export function setApiSecret(value) {
     localStorage.setItem(GA_API_SECRET_KEY, value)
 }
 
+export function getUserProperties() {
+    if (!userProperties) {
+        userProperties = localStorage.getItem(USER_PROPERTIES_KEY)
+    }
+    return userProperties ? userProperties : {}
+}
+
+export function setUserProperties(value) {
+    userProperties = value
+    localStorage.setItem(USER_PROPERTIES_KEY, value)
+}
+
+export function clearUserProperties(value) {
+    userProperties = null
+    localStorage.removeItem(USER_PROPERTIES_KEY)
+}
+
 export function getDebug() {
     if (debug === null) {
         debug = localStorage.getItem(DEBUG_KEY) || false
@@ -67,6 +86,9 @@ export default {
     setMeasurementId,
     getApiSecret,
     setApiSecret,
+    getUserProperties,
+    setUserProperties,
+    clearUserProperties,
     getDebug,
     setDebug,
 }

@@ -1,9 +1,23 @@
 import { inbox } from 'file-transfer'
-import { getDebug, setDebug, getOrGenerateClientId, getMeasurementId, setMeasurementId, getApiSecret, setApiSecret } from './local-storage'
-import shared from './shared'
+import {
+    getDebug, setDebug,
+    getOrGenerateClientId,
+    getMeasurementId, setMeasurementId,
+    getApiSecret, setApiSecret,
+    getUserProperties as getUserPropertiesFromStorage,
+    setUserProperties as setUserPropertiesInStorage,
+    clearUserProperties as clearUserPropertiesFromStorage
+} from './local-storage'
+import {
+    transformEventData, isObject,
+    FILE_EVENT, FILE_USER_PROPERTIES, FILE_CLEAR_USER_PROPERTIES
+} from './shared'
 import fetchWrapper from './fetch-wrapper'
 
-// Update global options
+//====================================================================================================
+// Configure options for Google analytics 4
+// Options include: measurementId, apiSecret, debug
+//====================================================================================================
 export const configure = options => {
     if (!options) {
         return
@@ -11,7 +25,7 @@ export const configure = options => {
 
     const { measurementId, apiSecret } = options
     if (!measurementId || !apiSecret) {
-        console.log('GA4 configure: no measurement ID or API secret provided, no events will be sent.')
+        console.log('GA4: no measurement ID or API secret provided in configure, no events will be sent.')
         return
     }
 
@@ -35,26 +49,56 @@ const init = () => {
 }
 
 //====================================================================================================
-// Send
-// Can be a single event object, or array of events
+// Send a single event object, or an array of events to GA4 servers
 //====================================================================================================
 export const send = event => {
-    const data = shared.transformData(event)
+    const data = transformEventData(event)
 
     // drop even if not configured. Configure should be the first function invoked for companion, before any send.
     if (!isConfigured()) {
-        console.log('companion: event sent prior to invoking configure, dropping event')
+        console.log('GA4: event sent prior to invoking configure, dropping event')
     } else {
         sendToGA(data)
     }
 }
+
+//====================================================================================================
+// Extend user properties. Keys previously used will be overwritten. Companion persists these in local storage
+//====================================================================================================
+export const setUserProperties = userProperties => {
+    if (!isObject(userProperties)) {
+        console.log('GA4: Provided user properties are not in object form')
+        return
+    }
+
+    // normalize all user property values to strings
+    Object.keys(userProperties).forEach(key => {
+        userProperties[key] = String(userProperties[key])
+    })
+
+    // merge new properties with existing properties from storage
+    setUserPropertiesInStorage(Object.assign({}, getUserProperties(), userProperties))
+    getDebug() && console.log(`GA4: Set user properties ${JSON.stringify(getUserProperties())}`)
+}
+
+//====================================================================================================
+// Clear all previously stored user properties
+//====================================================================================================
+export const clearUserProperties = () => {
+    clearUserPropertiesFromStorage()
+}
+
+//====================================================================================================
+// Get all current stored user properties
+//====================================================================================================
+export const getUserProperties = () => getUserPropertiesFromStorage()
 
 const sendToGA = (data) => {
     if (!data || !data.timestamp || !data.events) {
         return
     }
     if (!getMeasurementId() || !getApiSecret()) {
-        console.log('companion: no measurement ID or API secret')
+        console.log('GA4: no measurement ID or API secret')
         return
     }
 
@@ -63,12 +107,15 @@ const sendToGA = (data) => {
         events: data.events,
         timestamp_micros: data.timestamp * 1000, // companion may not be connected by socket at the time of the event so always set it to that timestamp
     }
+    if (Object.keys(getUserProperties()).length > 0) {
+        body.user_properties = transformUserProperties(getUserProperties())
+    }
 
     const bodyString = JSON.stringify(body)
     const debug = getDebug()
-    debug && console.log(`Measurement ID: ${getMeasurementId()}`)
-    debug && console.log(`Measurement API Secret: ${getApiSecret()}`)
-    debug && console.log(`Client ID: ${getOrGenerateClientId()}`)
+    debug && console.log(`GA4 Measurement ID: ${getMeasurementId()}`)
+    debug && console.log(`GA4 Measurement API Secret: ${getApiSecret()}`)
+    debug && console.log(`GA4 Client ID: ${getOrGenerateClientId()}`)
     debug && console.log('GA4 POST Payload: ', bodyString)
 
     fetchWrapper(`https://www.google-analytics.com/mp/collect?measurement_id=${getMeasurementId()}&api_secret=${getApiSecret()}`, {
@@ -85,16 +132,34 @@ const process_files = async () => {
     let file
     while ((file = await inbox.pop())) {
         const payload = await file.cbor()
-        if (file.name.startsWith('_google_analytics4_')) {
-            getDebug() && console.log(`File: ${file.name} is being processed.`)
+        if (file.name.startsWith(FILE_EVENT)) {
+            getDebug() && console.log(`GA4: File ${file.name} is being processed.`)
             sendToGA(payload)
+        } else if (file.name.startsWith(FILE_USER_PROPERTIES)) {
+            getDebug() && console.log(`GA4: File ${file.name} is being processed.`)
+            setUserProperties(payload)
+        } else if (file.name.startsWith(FILE_CLEAR_USER_PROPERTIES)) {
+            getDebug() && console.log(`GA4: File ${file.name} is being processed.`)
+            clearUserProperties()
         }
     }
 }
 
-const analytics = {
-    configure,
-    send,
+// measurement protocol api requires values to be wrapped in an object with a value field
+const transformUserProperties = userProperties => {
+    const newProps = {}
+    Object.keys(userProperties).forEach(key => {
+        newProps[key] = { value : userProperties[key] }
+    })
+    return newProps
 }
 
-export default analytics
+const exportable = {
+    configure,
+    send,
+    setUserProperties,
+    clearUserProperties,
+    getUserProperties,
+}
+
+export default exportable

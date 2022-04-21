@@ -19,9 +19,9 @@ describe('App', () => {
         return proxyquire.load(modulePath, Object.assign({}, fakeDeps, otherDeps))
     }
 
-    describe('send', () => {
-        const outboxSpy = sinon.spy(fakeDeps['file-transfer'].outbox)
+    const outboxSpy = sinon.spy(fakeDeps['file-transfer'].outbox)
 
+    describe('send', () => {
         beforeEach(function () {
             outboxSpy.enqueue.resetHistory()
         })
@@ -72,6 +72,33 @@ describe('App', () => {
                     name: 'eventname2'
                 } ],
                 timestamp: 1650223688019,
+            })
+        })
+    })
+
+    describe('user properties', () => {
+        beforeEach(function () {
+            outboxSpy.enqueue.resetHistory()
+        })
+
+        it('should enqueue to clear user properties', async () => {
+            const module = loadWithInjectedDependencies({ 'file-transfer': { outbox: outboxSpy } })
+
+            module.clearUserProperties()
+            assert(outboxSpy.enqueue.args[0][0].startsWith('_ga4_clearuserprops_'))
+        })
+
+        it('should enqueue to set user properties', async () => {
+            const module = loadWithInjectedDependencies({ 'file-transfer': { outbox: outboxSpy } })
+
+            module.setUserProperties({
+                userProp1: 'value1',
+                userProp2: 'value2',
+            })
+            assert(outboxSpy.enqueue.args[0][0].startsWith('_ga4_userprops_'))
+            assert.deepEqual(outboxSpy.enqueue.args[0][1], {
+                userProp1: 'value1',
+                userProp2: 'value2',
             })
         })
     })

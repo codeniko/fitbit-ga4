@@ -2,7 +2,7 @@ import { me as appbit } from 'appbit'
 import { display } from 'display'
 import { encode } from 'cbor'
 import { outbox } from 'file-transfer'
-import shared from './shared'
+import { transformEventData, isObject, FILE_EVENT, FILE_USER_PROPERTIES, FILE_CLEAR_USER_PROPERTIES } from './shared'
 
 let debug = false
 
@@ -15,15 +15,44 @@ export const setDebug = value => {
 // Can be a single event object, or array of events
 //====================================================================================================
 export const send = event => {
-    const data = shared.transformData(event)
+    const data = transformEventData(event)
 
     // Generate a unique filename
-    const filename = '_google_analytics4_' + (Math.floor(Math.random() * 10000000000000000))
-    // Enqueue the file
+    const filename = FILE_EVENT + (Math.floor(Math.random() * 10000000000000000))
     outbox.enqueue(filename, encode(data)).then(() => {
-        debug && console.log(`File: ${filename} transferred successfully.`)
+        debug && console.log(`GA4: File ${filename} transferred successfully.`)
     }).catch(function (error) {
-        debug && console.log(`File: ${filename} failed to transfer.`)
+        debug && console.log(`GA4: File ${filename} failed to transfer.`)
+    })
+}
+
+//====================================================================================================
+// Extend user properties. Keys previously used will be overwritten. Companion persists these in local storage
+//====================================================================================================
+export const setUserProperties = userProperties => {
+    if (!isObject(userProperties)) {
+        console.log('GA4: Provided user properties are not in object form')
+        return
+    }
+
+    // Generate a unique filename
+    const filename = FILE_USER_PROPERTIES + (Math.floor(Math.random() * 10000000000000000))
+    outbox.enqueue(filename, encode(userProperties)).then(() => {
+        debug && console.log(`GA4: File ${filename} transferred successfully.`)
+    }).catch(function (error) {
+        debug && console.log(`GA4: File ${filename} failed to transfer.`)
+    })
+}
+
+//====================================================================================================
+// Clear all previously stored user properties
+//====================================================================================================
+export const clearUserProperties = () => {
+    const filename = FILE_CLEAR_USER_PROPERTIES + (Math.floor(Math.random() * 10000000000000000))
+    outbox.enqueue(filename, '').then(() => {
+        debug && console.log(`GA4: File ${filename} transferred successfully.`)
+    }).catch(function (error) {
+        debug && console.log(`GA4: File ${filename} failed to transfer.`)
     })
 }
 
@@ -55,10 +84,12 @@ export const sendLoadAndDisplayOnEvents = value => {
     })
 }
 
-const analytics = {
+const exportable = {
     sendLoadAndDisplayOnEvents,
     send,
     setDebug,
+    setUserProperties,
+    clearUserProperties,
 }
 
-export default analytics
+export default exportable
