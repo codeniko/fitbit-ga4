@@ -60,7 +60,7 @@ const sendToGA = (data) => {
     const body = {
         client_id: getOrGenerateClientId(),
         events: data.events,
-        timestamp_micros: data.timestamp * 1000000, // companion may not be connected by socket at the time of the event so always set it to that timestamp
+        timestamp_micros: data.timestamp * 1000, // companion may not be connected by socket at the time of the event so always set it to that timestamp
     }
 
     const bodyString = JSON.stringify(body)
