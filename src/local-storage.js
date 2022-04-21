@@ -53,14 +53,15 @@ export function setApiSecret(value) {
 
 export function getUserProperties() {
     if (!userProperties) {
-        userProperties = localStorage.getItem(USER_PROPERTIES_KEY)
+        const propsString = localStorage.getItem(USER_PROPERTIES_KEY)
+        userProperties = propsString ? JSON.parse(propsString) : {}
     }
-    return userProperties ? userProperties : {}
+    return userProperties
 }
 
 export function setUserProperties(value) {
     userProperties = value
-    localStorage.setItem(USER_PROPERTIES_KEY, value)
+    localStorage.setItem(USER_PROPERTIES_KEY, JSON.stringify(value))
 }
 
 export function clearUserProperties(value) {
