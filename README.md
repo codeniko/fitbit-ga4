@@ -74,6 +74,23 @@ ga.send([
 ])
 ```
 
+## User properties
+You can set and clear user properties from both the app and companion. New user properties get appended alongside existing ones. If you want to change an existing user property, use the same key.
+User properties are persisted in companion's local storage to be restored whenever companion reloads. Note, user property values are stored as Strings.
+#### App/Companion
+```javascript
+// Set user properties
+ga.setUserProperties({
+    my_user_property: 'property_value'
+})
+
+// Clear persisted user properties
+ga.clearUserProperties()
+
+// View persisted user properties, NOTE only available on companion!
+ga.getUserProperties()
+```
+
 ## Setting up GA4 on Google
 1) Create new GA4 property (no need to create the UA property alongside it).
 2) In Data Streams, choose the "Web" platform. Enter any URL and stream name. You can disable Enhanced measurements as those are tied to webpages and are irrelevant for fitbit apps.

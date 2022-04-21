@@ -11,5 +11,5 @@
         }],
         "@semantic-release/github"
     ],
-    "dryRun": true
+    "dryRun": false
 }
