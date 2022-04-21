@@ -11,6 +11,7 @@ jobs:
       - run: npm ci
       - run: npm run build:commonjs
       - run: npm test
+      - run: npm run prepare
       - name: Release
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
