@@ -8,6 +8,8 @@ build
 /shared.js.map
 /local-storage.js
 /local-storage.js.map
+/fetch-wrapper.js
+/fetch-wrapper.js.map
 .DS_Store
 .idea
 package-lock.json

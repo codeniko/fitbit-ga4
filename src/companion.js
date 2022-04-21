@@ -1,6 +1,7 @@
 import { inbox } from 'file-transfer'
 import { getDebug, setDebug, getOrGenerateClientId, getMeasurementId, setMeasurementId, getApiSecret, setApiSecret } from './local-storage'
 import shared from './shared'
+import fetchWrapper from './fetch-wrapper'
 
 // Update global options
 export const configure = options => {
@@ -70,7 +71,7 @@ const sendToGA = (data) => {
     debug && console.log(`Client ID: ${getOrGenerateClientId()}`)
     debug && console.log('GA4 POST Payload: ', bodyString)
 
-    fetch(`https://www.google-analytics.com/mp/collect?measurement_id=${getMeasurementId()}&api_secret=${getApiSecret()}`, {
+    fetchWrapper(`https://www.google-analytics.com/mp/collect?measurement_id=${getMeasurementId()}&api_secret=${getApiSecret()}`, {
         method: 'POST',
         body: bodyString,
     })
