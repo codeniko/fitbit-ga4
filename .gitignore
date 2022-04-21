@@ -12,4 +12,3 @@ build
 /fetch-wrapper.js.map
 .DS_Store
 .idea
-package-lock.json
