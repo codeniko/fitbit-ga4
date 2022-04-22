@@ -49,7 +49,7 @@ export const setUserProperties = userProperties => {
 //====================================================================================================
 export const clearUserProperties = () => {
     const filename = FILE_CLEAR_USER_PROPERTIES + (Math.floor(Math.random() * 10000000000000000))
-    outbox.enqueue(filename, '').then(() => {
+    outbox.enqueue(filename, encode('')).then(() => {
         debug && console.log(`GA4: File ${filename} transferred successfully.`)
     }).catch(function (error) {
         debug && console.log(`GA4: File ${filename} failed to transfer.`)
