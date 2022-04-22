@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/codeniko/fitbit-ga4/compare/v1.1.2...v1.2.0) (2022-04-22)
+
+
+### Features
+
+* **file-transfer:** Allow disabling of fitbit-ga4 auto file transfer ([bb84624](https://github.com/codeniko/fitbit-ga4/commit/bb8462442661388574c1fd14498513e0440e9e3b))
+
 ## [1.1.2](https://github.com/codeniko/fitbit-ga4/compare/v1.1.1...v1.1.2) (2022-04-21)
 
 
