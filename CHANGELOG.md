@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/codeniko/fitbit-ga4/compare/v1.2.0...v1.2.1) (2022-04-22)
+
+
+### Bug Fixes
+
+* **file-transfer:** must encode data for empty file or it will error ([f4f236e](https://github.com/codeniko/fitbit-ga4/commit/f4f236e0b62c11939725f3614ef8663c3a055cc5))
+
 # [1.2.0](https://github.com/codeniko/fitbit-ga4/compare/v1.1.2...v1.2.0) (2022-04-22)
 
 
